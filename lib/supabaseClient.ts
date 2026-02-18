@@ -1,8 +1,20 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+
+let client: SupabaseClient | null = null;
 
 export const createBrowserSupabaseClient = () => {
-  return createClient(
+  if (client) return client;
+
+  client = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      auth: {
+        flowType: "pkce",
+        detectSessionInUrl: true,
+      },
+    },
   );
+
+  return client;
 };

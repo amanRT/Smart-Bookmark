@@ -1,67 +1,55 @@
 "use client";
 
 import { createBrowserSupabaseClient } from "@/lib/supabaseClient";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+interface Bookmark {
+  id: string;
+  title: string;
+  url: string;
+  user_id: string;
+  created_at: string;
+}
 
 export default function DashboardClient() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const supabase = useMemo(() => createBrowserSupabaseClient(), []);
 
-  const [bookmarks, setBookmarks] = useState<any[]>([]);
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [sessionReady, setSessionReady] = useState(false);
-  const supabase = createBrowserSupabaseClient();
+  const [error, setError] = useState<string | null>(null);
 
-  // 🔐 Protect dashboard
   useEffect(() => {
-    const checkUser = async () => {
-      const { data } = await supabase.auth.getSession();
-
-      if (!data.session) {
-        router.push("/");
-      } else {
-        setSessionReady(true); // ✅ auth ready
-      }
-    };
-
-    checkUser();
-  }, [router]);
-
-  // 🔑 OAuth exchange
-  useEffect(() => {
-    const checkUser = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session) {
-        router.replace("/");
-      } else {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
         setSessionReady(true);
+      } else if (event === "SIGNED_OUT" || event === "INITIAL_SESSION") {
+        router.push("/");
       }
-    };
+    });
 
-    checkUser();
-  }, [router]);
+    return () => subscription.unsubscribe();
+  }, [router, supabase]);
 
-  // 📥 Fetch bookmarks
-  const fetchBookmarks = async () => {
-    const { data } = await supabase
+  const fetchBookmarks = useCallback(async () => {
+    const { data, error } = await supabase
       .from("bookmarks")
       .select("*")
       .order("created_at", { ascending: false });
 
+    if (error) {
+      setError("Failed to load bookmarks.");
+      return;
+    }
+
     setBookmarks(data || []);
-  };
+  }, [supabase]);
 
-  useEffect(() => {
-    fetchBookmarks();
-  }, []);
-
-  // ⚡ REALTIME LISTENER
   useEffect(() => {
     if (!sessionReady) return;
 
@@ -85,10 +73,12 @@ export default function DashboardClient() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [sessionReady]);
+  }, [sessionReady, supabase, fetchBookmarks]);
 
   const addBookmark = async () => {
     if (!title || !url) return;
+
+    setError(null);
 
     let formattedUrl = url.trim();
     if (!formattedUrl.startsWith("http")) {
@@ -103,6 +93,11 @@ export default function DashboardClient() {
       .insert([{ title, url: formattedUrl, user_id: userId }])
       .select();
 
+    if (error) {
+      setError("Failed to add bookmark.");
+      return;
+    }
+
     if (data) setBookmarks((prev) => [data[0], ...prev]);
 
     setTitle("");
@@ -110,7 +105,16 @@ export default function DashboardClient() {
   };
 
   const deleteBookmark = async (id: string) => {
-    await supabase.from("bookmarks").delete().eq("id", id);
+    setError(null);
+
+    const { error } = await supabase.from("bookmarks").delete().eq("id", id);
+
+    if (error) {
+      setError("Failed to delete bookmark.");
+      return;
+    }
+
+    setBookmarks((prev) => prev.filter((b) => b.id !== id));
   };
 
   const logout = async () => {
@@ -130,19 +134,25 @@ export default function DashboardClient() {
         </button>
       </div>
 
+      {error && (
+        <div className="bg-red-100 text-red-700 px-4 py-2 rounded mb-4">
+          {error}
+        </div>
+      )}
+
       <div className="flex gap-2 mb-4">
         <input
           placeholder="Title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="border px-3 py-2 w-1/3"
+          className="border px-3 py-2 w-1/3 rounded"
         />
 
         <input
           placeholder="URL"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          className="border px-3 py-2 w-2/3"
+          className="border px-3 py-2 w-2/3 rounded"
         />
 
         <button
@@ -155,7 +165,7 @@ export default function DashboardClient() {
 
       <div className="grid gap-3">
         {bookmarks.map((b) => (
-          <div key={b.id} className="flex justify-between border p-3">
+          <div key={b.id} className="flex justify-between border p-3 rounded">
             <a href={b.url} target="_blank" className="text-blue-600">
               {b.title}
             </a>
