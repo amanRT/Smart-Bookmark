@@ -1,16 +1,27 @@
 "use client";
 
 import { createBrowserSupabaseClient } from "@/lib/supabaseClient";
-import { useMemo } from "react";
+import { getBaseUrl } from "@/lib/getBaseUrl";
+import { useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Page() {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
+  const router = useRouter();
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        router.replace("/dashboard");
+      }
+    });
+  }, [supabase, router]);
 
   const loginWithGoogle = async () => {
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${getBaseUrl()}/auth/callback`,
       },
     });
   };
