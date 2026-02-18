@@ -497,14 +497,19 @@ export default function DashboardClient() {
                       "linear-gradient(135deg, rgba(99,102,241,0.08), rgba(168,85,247,0.08))",
                   }}
                 >
-                  <img
-                    src={`https://www.google.com/s2/favicons?domain=${getDomain(b.url)}&sz=32`}
-                    alt=""
-                    className="w-4 h-4 sm:w-5 sm:h-5"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
-                  />
+                  <svg
+                    className="w-4 h-4 sm:w-5 sm:h-5 text-primary"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                    />
+                  </svg>
                 </div>
 
                 {/* Content */}
