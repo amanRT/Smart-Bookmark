@@ -1,6 +1,7 @@
 "use client";
 
-import { supabase } from "@/lib/supabaseClient";
+import { createBrowserSupabaseClient } from "@/lib/supabaseClient";
+
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -12,6 +13,7 @@ export default function DashboardClient() {
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [sessionReady, setSessionReady] = useState(false);
+  const supabase = createBrowserSupabaseClient();
 
   // 🔐 Protect dashboard
   useEffect(() => {
