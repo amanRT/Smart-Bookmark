@@ -24,8 +24,12 @@ export default function AuthCallback() {
   }, [supabase]);
 
   return (
-    <div className="flex h-screen items-center justify-center">
-      <p className="text-lg">{status}</p>
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4">
+      <div
+        className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full"
+        style={{ animation: "spin 0.8s linear infinite" }}
+      />
+      <p className="text-muted text-sm font-medium">{status}</p>
     </div>
   );
 }
