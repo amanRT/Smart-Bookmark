@@ -30,18 +30,20 @@ export default function DashboardClient() {
 
   // 🔑 OAuth exchange
   useEffect(() => {
-    const handleAuth = async () => {
-      const code = searchParams.get("code");
+    const checkUser = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-      if (code) {
-        await supabase.auth.exchangeCodeForSession(window.location.href);
-        await supabase.auth.refreshSession();
-        window.history.replaceState({}, document.title, "/dashboard");
+      if (!session) {
+        router.replace("/");
+      } else {
+        setSessionReady(true);
       }
     };
 
-    handleAuth();
-  }, [searchParams]);
+    checkUser();
+  }, [router]);
 
   // 📥 Fetch bookmarks
   const fetchBookmarks = async () => {
@@ -59,7 +61,9 @@ export default function DashboardClient() {
 
   // ⚡ REALTIME LISTENER
   useEffect(() => {
-    if (!sessionReady) return; // 🚨 wait for login
+    if (!sessionReady) return;
+
+    fetchBookmarks();
 
     const channel = supabase
       .channel("bookmarks-channel")

@@ -1,20 +1,20 @@
-"use client";
+import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
-import { useEffect } from "react";
-import { supabase } from "@/lib/supabaseClient";
-import { useRouter } from "next/navigation";
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const code = url.searchParams.get("code");
 
-export default function AuthCallback() {
-  const router = useRouter();
+  if (!code) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
 
-  useEffect(() => {
-    const handleAuth = async () => {
-      await supabase.auth.exchangeCodeForSession(window.location.href);
-      router.push("/dashboard");
-    };
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  );
 
-    handleAuth();
-  }, [router]);
+  await supabase.auth.exchangeCodeForSession(code);
 
-  return <p className="p-8">Logging you in...</p>;
+  return NextResponse.redirect(new URL("/dashboard", request.url));
 }
